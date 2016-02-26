@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Find and replace using the Silver Searcher (ag) tool to find and perl to
+# replace. It's fast, and should only replace what ag normally finds, so doing
+# a dry run is as simple as finding some stuff with ag.
+#
+# $1: string to match
+# $2: string to substitute
+#
+# Note: This approach fragile and likely does not support regex.
+
+if [ "$#" -ne 2 ]; then
+    echo "Two parameters are required." >&2
+    exit 1
+fi
+
+perl -p -i -e 's/'${1}'/'${2}'/g' `ag -l ${1}`
