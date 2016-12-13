@@ -5,3 +5,4 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}"  )" && pwd  )"
 
 # Symlink scripts to /usr/local/bin
 ln -s $DIR/agreplace /usr/local/bin/agreplace
+ln -s $DIR/dump-cmd-restore /usr/local/bin/dump-cmd-restore

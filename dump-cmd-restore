@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# Dump the database, run a given command, then restore from the original
+# database dump.
+
+usage() { echo "Usage: $0 [-x <command>] [-d <db_name>] [-u <db_username>]" 1>&2; exit 1; }
+
+set -e
+
+DIR=$(dirname "$0")/..
+FILENAME="db$(date +'%Y%m%d_%H%M%S').dump"
+
+while getopts ":x:d:u:" o; do
+    case "${o}" in
+        x)
+            COMMAND=${OPTARG}
+            ;;
+        d)
+            DB_NAME=${OPTARG}
+            ;;
+        u)
+            DB_USER=${OPTARG}
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+if [ -z "${COMMAND}" ] || [ -z "${DB_NAME}" ] || [ -z "${DB_USER}" ] ; then
+    usage
+fi
+
+command -v pm2 >/dev/null 2>&1 || { echo >&2 "Global pm2 install is required. Aborting."; exit 1;  }
+
+# Make backup of local db.
+mkdir -p $DIR/dumps/local
+pg_dump $DB_NAME > $DIR/dumps/local/$FILENAME
+
+# Run user provided command.
+eval $COMMAND
+
+# Stop services.
+pm2 stop all > /dev/null 2>&1
+
+# Restore from the local dump.
+dropdb $DB_NAME
+createdb -O $DB_NAME $DB_USER
+psql $DB_NAME < $DIR/dumps/local/$FILENAME > /dev/null 2>&1
+
+# Restart services.
+pm2 start all > /dev/null 2>&1
